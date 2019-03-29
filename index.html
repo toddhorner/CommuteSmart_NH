@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
+        integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+        crossorigin="" />
+    <style>
+        #mymap {
+            width: 900px;
+            height: 600px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="mymap"></div>
+
+    <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
+        integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
+        crossorigin=""></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script>
+        var mapboxAccessToken = 'pk.eyJ1IjoidG9ob3JuZXIiLCJhIjoiY2l6NGFoeXIxMDRscDMycGd2dzVzZTg3NyJ9.Vfe_mGvZ-mHldkO0x2gXEw'
+        var rpc_boundaries;
+        rpcs = $.getJSON('./json/rpc_boundaries.geojson', function (rpc_data) {
+            town_data = $.getJSON('./json/nh_municipalities.json', function (town_data) {
+                var mymap = L.map('mymap').setView([43.193851, -71.572395], 7);
+
+                L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=' + mapboxAccessToken, {
+                    id: 'mapbox.light',
+                    attribution: '...'
+                }).addTo(mymap);
+                var town_boundaries = L.geoJson(town_data, {
+                    fillOpacity: 0,
+                    color: '#1a355e',
+                    opacity: 0.5,
+                    weight: 1
+                }).addTo(mymap);
+
+                rpc_boundaries = L.geoJson(rpc_data, {
+                    fillOpacity: 0,
+                    color: '#1a355e',
+                    weight: 4,
+                    onEachFeature: onEachFeature
+                }).addTo(mymap);
+
+                function highlightFeature(e) {
+                    var layer = e.target;
+
+                    layer.setStyle({
+                        weight: 5,
+                        color: '#96d63e',
+                        fillOpacity: 0.2
+                    });
+
+                    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                        layer.bringToFront();
+                    }
+                }
+
+                function onEachFeature(feature, layer) {
+                    layer.on({
+                        mouseover: highlightFeature,
+                        mouseout: resetHighlight
+                    });
+                }
+
+                function resetHighlight(e) {
+                    rpc_boundaries.resetStyle(e.target);
+                }
+
+            })
+
+
+        })
+
+
+
+    </script>
+</body>
+
+</html>
