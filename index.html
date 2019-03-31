@@ -5,15 +5,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>CommuteSmart NH</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
         integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
         crossorigin="" />
     <style>
-        #mymap {
-            width: 900px;
-            height: 600px;
+        body {
+            padding: 0;
+            margin: 0;
         }
+
+        html,
+        body,
+        #mymap {
+            height: 100%;
+            width: 100vw;
+        }
+
 
         .info {
             padding: 6px 8px;
@@ -66,7 +75,7 @@
                     weight: 4,
                 }).addTo(mymap);
 
-   
+
 
                 let town_boundaries = L.geoJson(town_data, {
                     fillOpacity: 0,
@@ -109,7 +118,7 @@
                     let pt = turf.point([lng, lat]);
 
                     rpc_boundaries.eachLayer((l) => {
-                      
+
                         isInside = turf.inside(pt, l.toGeoJSON());
                         if (isInside) {
                             L.DomUtil.get('region_name').innerHTML = l.feature.properties.SHORT;
@@ -117,14 +126,14 @@
                                 color: '#96d63e',
                                 weight: 6
                             })
-                            
+
                             if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
                                 l.bringToFront();
                                 town_boundaries.bringToFront();
                             }
-                        
+
                         }
-                        else{
+                        else {
                             rpc_boundaries.resetStyle(l)
                         }
                     })
