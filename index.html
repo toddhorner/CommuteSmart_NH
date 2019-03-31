@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>CommuteSmart NH</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
         integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
         crossorigin="" />
@@ -13,6 +13,25 @@
         #mymap {
             width: 900px;
             height: 600px;
+        }
+
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+
+        .info h4 {
+            margin: 0 0 2px;
+            color: #1a355e;
+        }
+
+        .info p {
+            margin: 0px 0px 5px 0px;
+            color: #4d4d4d;
         }
     </style>
 </head>
@@ -25,36 +44,93 @@
         crossorigin=""></script>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"
         integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@5/turf.min.js"></script>
     <script>
-        var mapboxAccessToken = 'pk.eyJ1IjoidG9ob3JuZXIiLCJhIjoiY2l6NGFoeXIxMDRscDMycGd2dzVzZTg3NyJ9.Vfe_mGvZ-mHldkO0x2gXEw'
-        var rpc_boundaries;
-        rpcs = $.getJSON('./json/rpc_boundaries.geojson', function (rpc_data) {
-            town_data = $.getJSON('./json/nh_municipalities.json', function (town_data) {
-                var mymap = L.map('mymap').setView([43.193851, -71.572395], 7);
 
-                L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=' + mapboxAccessToken, {
-                    id: 'mapbox.light',
-                    attribution: '...'
-                }).addTo(mymap);
-                var town_boundaries = L.geoJson(town_data, {
-                    fillOpacity: 0,
-                    color: '#1a355e',
-                    opacity: 0.5,
-                    weight: 1
+
+        $.getJSON('./json/rpc_boundaries.geojson', function (rpc_data) {
+            $.getJSON('./json/nh_municipalities.geojson', function (town_data) {
+                const mapboxAccessToken = 'pk.eyJ1IjoidG9ob3JuZXIiLCJhIjoiY2l6NGFoeXIxMDRscDMycGd2dzVzZTg3NyJ9.Vfe_mGvZ-mHldkO0x2gXEw';
+                let mymap = L.map('mymap').setView([43.193851, -71.572395], 7);
+
+
+                L.tileLayer('https://api.mapbox.com/styles/v1/tohorner/cjtx4uwjp2hxo1fnv47yqst1v/tiles/256/{z}/{x}/{y}@2x?access_token=' + mapboxAccessToken, {
+                    id: 'cjtx4uwjp2hxo1fnv47yqst1v',
+                    attribution: 'Mapbox'
                 }).addTo(mymap);
 
-                rpc_boundaries = L.geoJson(rpc_data, {
+
+                let rpc_boundaries = L.geoJson(rpc_data, {
                     fillOpacity: 0,
                     color: '#1a355e',
                     weight: 4,
+                }).addTo(mymap);
+
+   
+
+                let town_boundaries = L.geoJson(town_data, {
+                    fillOpacity: 0,
+                    color: '#1a355e',
+                    opacity: 0.5,
+                    weight: 1,
                     onEachFeature: onEachFeature
                 }).addTo(mymap);
 
+
+                let info = L.control();
+
+                info.onAdd = function (map) {
+                    this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+
+                    this._town = L.DomUtil.create('div', 'town', this._div);
+                    this._region = L.DomUtil.create('div', 'region', this._div);
+
+                    this._town.innerHTML = '<h4>Municipality</h4><p id=town_name>-</p>';
+                    this._region.innerHTML = '<h4>Region</h4><p id=region_name>-</p><h4>Region Contact</h4><p id=region_contact>-</p><h4>Phone</h4><p id=phone>-</p>';
+
+                    this.update();
+                    return this._div;
+                };
+
+                // Method that will update town info displayed in control.
+                info.update = function (layer) {
+                    if (layer) {
+                        L.DomUtil.get('town_name').innerHTML = layer.feature.properties.TOWN_NAME;
+                    }
+                };
+
+                info.addTo(mymap);
+
                 function highlightFeature(e) {
-                    var layer = e.target;
+                    let layer = e.target;
+                    let ptcoords = e.latlng;
+                    let lat = e.latlng.lat;
+                    let lng = e.latlng.lng;
+                    let pt = turf.point([lng, lat]);
+
+                    rpc_boundaries.eachLayer((l) => {
+                      
+                        isInside = turf.inside(pt, l.toGeoJSON());
+                        if (isInside) {
+                            L.DomUtil.get('region_name').innerHTML = l.feature.properties.SHORT;
+                            l.setStyle({
+                                color: '#96d63e',
+                                weight: 6
+                            })
+                            
+                            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                                l.bringToFront();
+                                town_boundaries.bringToFront();
+                            }
+                        
+                        }
+                        else{
+                            rpc_boundaries.resetStyle(l)
+                        }
+                    })
 
                     layer.setStyle({
-                        weight: 5,
+                        weight: 2,
                         color: '#96d63e',
                         fillOpacity: 0.2
                     });
@@ -62,26 +138,29 @@
                     if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
                         layer.bringToFront();
                     }
+                    info.update(layer)
                 }
 
                 function onEachFeature(feature, layer) {
                     layer.on({
                         mouseover: highlightFeature,
-                        mouseout: resetHighlight
+                        mouseout: resetHighlight,
+                        click: zoomToFeature
                     });
                 }
 
                 function resetHighlight(e) {
-                    rpc_boundaries.resetStyle(e.target);
+                    town_boundaries.resetStyle(e.target);
+                    info.update();
+                }
+
+                function zoomToFeature(e) {
+                    mymap.fitBounds(e.target.getBounds());
                 }
 
             })
 
-
         })
-
-
-
     </script>
 </body>
 
